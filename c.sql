@@ -335,24 +335,19 @@ INSERT INTO ville (nom, region, province) VALUES
 
 -- Domaines de spécialisation agricole (secteur > domaine)
 INSERT INTO domaine_specialisation (nom, description, secteur) VALUES
-    -- Agriculture vivrière
-    ('Riziculture', 'Culture du riz dans les rizières (vary)', 'AGRICULTURE_VIVRIERE'),
-    ('Maraîchage', 'Culture des légumes et plantes potagères', 'AGRICULTURE_VIVRIERE'),
+    ('Riziculture', 'Culture du riz dans les rizieres (vary)', 'AGRICULTURE_VIVRIERE'),
+    ('Maraichage', 'Culture des legumes et plantes potageres', 'AGRICULTURE_VIVRIERE'),
     ('Culture de manioc', 'Production de manioc et tubercules', 'AGRICULTURE_VIVRIERE'),
-    ('Céréales', 'Maïs, sorgho, blé', 'AGRICULTURE_VIVRIERE'),
-    -- Agriculture commerciale
+    ('Cereales', 'Mais, sorgho, ble', 'AGRICULTURE_VIVRIERE'),
     ('Vanille', 'Production et collecte de vanille', 'AGRICULTURE_COMMERCIALE'),
     ('Girofle', 'Production et collecte de girofle', 'AGRICULTURE_COMMERCIALE'),
-    ('Café', 'Caféiculture', 'AGRICULTURE_COMMERCIALE'),
+    ('Cafe', 'Cafeiculture', 'AGRICULTURE_COMMERCIALE'),
     ('Litchi', 'Production de litchi pour export', 'AGRICULTURE_COMMERCIALE'),
-    ('Cacao', 'Cacaoyère', 'AGRICULTURE_COMMERCIALE'),
-    -- Élevage
-    ('Élevage bovin', 'Zébus et bovins', 'ELEVAGE'),
+    ('Cacao', 'Cacaoyere', 'AGRICULTURE_COMMERCIALE'),
+    ('Elevage bovin', 'Zebus et bovins', 'ELEVAGE'),
     ('Aviculture', 'Poulets, pintades, canards', 'ELEVAGE'),
     ('Apiculture', 'Production de miel', 'ELEVAGE'),
-    -- Pêche
-    ('Pêche maritime', 'Pêche en mer et sur la côte', 'PECHE'),
+    ('Peche maritime', 'Peche en mer et sur la cete', 'PECHE'),
     ('Pisciculture', 'Aquaculture en eau douce', 'PECHE'),
-    -- Horticulture
     ('Floriculture', 'Production de fleurs', 'HORTICULTURE'),
-    ('Arboriculture fruitière', 'Arbres fruitiers tropicaux', 'HORTICULTURE');
+    ('Arboriculture fruitiere', 'Arbres fruitiers tropicaux', 'HORTICULTURE');
