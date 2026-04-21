@@ -6,7 +6,6 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- ===== Parent Spring Boot ===== -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -14,7 +13,6 @@
         <relativePath/>
     </parent>
 
-    <!-- ===== Identité du projet ===== -->
     <groupId>com.agri</groupId>
     <artifactId>federation</artifactId>
     <version>1.0.0</version>
@@ -22,71 +20,60 @@
     <description>API REST — Fédération de Collectivités Agricoles Madagascar</description>
     <packaging>jar</packaging>
 
-    <!-- ===== Propriétés ===== -->
     <properties>
         <java.version>17</java.version>
         <springdoc.version>2.5.0</springdoc.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <lombok.version>1.18.32</lombok.version>
+        <lombok.version>1.18.30</lombok.version>
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
     </properties>
 
-    <!-- ===== Dépendances ===== -->
     <dependencies>
-
-        <!-- Spring Web (REST controllers) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Data JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- PostgreSQL Driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Validation (Bean Validation / @NotNull, @Size, etc.) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- Spring Security (JWT Bearer) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- Lombok (réduction boilerplate : @Getter, @Setter, @Builder, etc.) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
-            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
 
-        <!-- MapStruct (mapping Entity <-> DTO) -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
         </dependency>
 
-        <!-- SpringDoc OpenAPI (Swagger UI auto-généré depuis le code) -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc.version}</version>
         </dependency>
 
-        <!-- DevTools (rechargement automatique en développement) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -94,7 +81,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -105,19 +91,14 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
-    <!-- ===== Build ===== -->
     <build>
         <plugins>
-
-            <!-- Plugin Spring Boot (génère le JAR exécutable) -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <!-- Exclure Lombok du JAR final -->
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
@@ -127,19 +108,23 @@
                 </configuration>
             </plugin>
 
-            <!-- Compiler plugin : nécessaire pour Lombok + MapStruct ensemble -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <annotationProcessorPaths>
-                        <!-- Lombok DOIT être avant MapStruct -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>${lombok-mapstruct-binding.version}</version>
                         </path>
                         <path>
                             <groupId>org.mapstruct</groupId>
@@ -149,8 +134,6 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
-
 </project>
