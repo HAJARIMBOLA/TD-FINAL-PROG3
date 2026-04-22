@@ -18,6 +18,12 @@ info:
     - **F** – Assiduité des membres
     - **G** – Statistiques
     - **H** – Statistiques de la fédération
+    - **J** – Attribution d'un numéro et d'un nom unique à une collectivité
+
+    ## Versioning
+    - **v2.0.0** (courant) : version complète avec processus de demande, parrainage, cotisations, etc.
+    - **v0.1.0** (endpoints additionnels) : `POST /collectivities`, `POST /members` et `PUT /collectivities/{collectivityId}/federation-attributes`.
+    - **v0.0.1** (endpoints additionnels) : `POST /collectivities` et `POST /members` pour création groupée simplifiée.
   version: 2.0.0
   contact:
     name: Fédération Agricole Madagascar
@@ -45,6 +51,8 @@ tags:
     description: Rapports et indicateurs par collectivité
   - name: H - Statistiques Fédération
     description: Rapports globaux de la fédération
+  - name: J - Attribution Fédération
+    description: Attribution d'un numéro et d'un nom unique à une collectivité
 
 paths:
   # ─── AUTH ─────────────────────────────────────────────
@@ -614,7 +622,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StatistiquesMembreResponse'
 
-  # ─── H : STATISTIQUES FÉDÉRATION (nouveau) ───────────
+  # ─── H : STATISTIQUES FÉDÉRATION ─────────────────────
   /statistiques/federation/rapport:
     get:
       tags: [H - Statistiques Fédération]
@@ -635,6 +643,124 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FederationRapportResponse'
+
+  # ─── ENDPOINTS BULK (v0.0.1) ─────────────────────────
+  /collectivities:
+    post:
+      tags: [A - Collectivités]
+      summary: Création directe d'une ou plusieurs collectivités (version simplifiée)
+      description: |
+        Permet de créer des collectivités en une seule requête, sans passer par une demande préalable.
+        Le champ `federationApproval` doit être `true` pour que la création soit acceptée.
+      operationId: createCollectivitiesBulk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateCollectivity'
+      responses:
+        '201':
+          description: Collectivités créées
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Collectivity'
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /members:
+    post:
+      tags: [B - Membres]
+      summary: Création directe d'un ou plusieurs membres (version simplifiée)
+      description: |
+        Permet d'ajouter des membres en bloc. Les référents (`referees`) sont des IDs de membres existants.
+        Les frais d'adhésion et cotisations sont indiqués par des booléens.
+      operationId: createMembersBulk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateMember'
+      responses:
+        '201':
+          description: Membres créés
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── J : ATTRIBUTION NUMÉRO ET NOM UNIQUE (nouveau) ──
+  /collectivities/{collectivityId}/federation-attributes:
+    put:
+      tags: [J - Attribution Fédération]
+      summary: Attribuer un numéro unique et un nom unique à une collectivité
+      description: |
+        Permet à la fédération d'attribuer un numéro unique et un nom unique à une collectivité existante.
+        
+        **Règles métier** :
+        - Le `uniqueNumber` et le `uniqueName` doivent être uniques parmi toutes les collectivités.
+        - Une fois attribués, le `uniqueNumber` et le `uniqueName` **ne peuvent plus être modifiés**.
+        - Si l'on tente de modifier des attributs déjà attribués, une réponse 409 est retournée.
+        - Si le `uniqueNumber` ou le `uniqueName` est déjà utilisé par une autre collectivité, une réponse 409 est retournée avec le champ en conflit.
+      operationId: assignFederationAttributes
+      parameters:
+        - name: collectivityId
+          in: path
+          required: true
+          description: Identifiant de la collectivité à mettre à jour
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignFederationAttributesRequest'
+      responses:
+        '200':
+          description: Collectivité mise à jour avec ses attributs fédération
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        '400':
+          description: |
+            Requête invalide – champs manquants, données malformées, ou chaîne vide pour uniqueNumber ou uniqueName.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Aucune collectivité trouvée avec le collectivityId fourni.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            Conflit – le uniqueNumber ou le uniqueName est déjà utilisé par une autre collectivité,
+            ou ils ont déjà été attribués à cette collectivité et ne peuvent plus être modifiés.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponse'
 
 # ─── COMPONENTS ─────────────────────────────────────────
 components:
@@ -786,7 +912,7 @@ components:
           description: "Nature de la relation avec le parrain (famille, amis, collègues, etc.)"
           example: "famille"
 
-    # ── Requests (mises à jour B-2)
+    # ── Requests
     CreateCollectiviteRequest:
       type: object
       required: [nom, villeId, domaineSpecialisationId, membresFondateursIds]
@@ -982,6 +1108,24 @@ components:
               motifAbsence:
                 type: string
                 description: Obligatoire si statut=EXCUSE
+
+    # ── NOUVEAU : Request pour fonctionnalité J ──────────
+    AssignFederationAttributesRequest:
+      type: object
+      required:
+        - uniqueNumber
+        - uniqueName
+      properties:
+        uniqueNumber:
+          type: string
+          minLength: 1
+          description: Numéro unique attribué par la fédération à la collectivité
+          example: "FED-2026-0042"
+        uniqueName:
+          type: string
+          minLength: 1
+          description: Nom unique attribué par la fédération à la collectivité
+          example: "Coopérative Rizicole du Vakinankaratra"
 
     # ── Responses
     CollectiviteResponse:
@@ -1283,3 +1427,150 @@ components:
           type: string
         message:
           type: object
+
+    # ── NOUVEAU : ConflictResponse pour le 409 de J ──────
+    ConflictResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          example: 409
+        error:
+          type: string
+          example: "Conflict"
+        message:
+          type: string
+          example: "Le uniqueName est déjà utilisé par une autre collectivité"
+        conflictingField:
+          type: string
+          enum: [uniqueNumber, uniqueName, alreadyAssigned]
+          description: |
+            - uniqueNumber : le numéro est déjà pris par une autre collectivité
+            - uniqueName : le nom est déjà pris par une autre collectivité
+            - alreadyAssigned : les attributs ont déjà été attribués et ne peuvent plus être modifiés
+
+    # ── SCHÉMAS BULK (v0.0.1) ────────────────────────────
+    CreateCollectivity:
+      type: object
+      properties:
+        location:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberIdentifier'
+        federationApproval:
+          type: boolean
+        structure:
+          $ref: '#/components/schemas/CreateCollectivityStructure'
+    CreateCollectivityStructure:
+      type: object
+      properties:
+        president:
+          $ref: '#/components/schemas/MemberIdentifier'
+        vicePresident:
+          $ref: '#/components/schemas/MemberIdentifier'
+        treasurer:
+          $ref: '#/components/schemas/MemberIdentifier'
+        secretary:
+          $ref: '#/components/schemas/MemberIdentifier'
+    CollectivityStructure:
+      type: object
+      properties:
+        president:
+          $ref: '#/components/schemas/Member'
+        vicePresident:
+          $ref: '#/components/schemas/Member'
+        treasurer:
+          $ref: '#/components/schemas/Member'
+        secretary:
+          $ref: '#/components/schemas/Member'
+
+    # ── MODIFIÉ : Collectivity avec uniqueNumber et uniqueName ──
+    Collectivity:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        location:
+          type: string
+        structure:
+          $ref: '#/components/schemas/CollectivityStructure'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+        uniqueNumber:
+          type: string
+          nullable: true
+          description: Numéro unique attribué par la fédération (null jusqu'à attribution)
+          example: "FED-2026-0042"
+        uniqueName:
+          type: string
+          nullable: true
+          description: Nom unique attribué par la fédération (null jusqu'à attribution)
+          example: "Coopérative Rizicole du Vakinankaratra"
+
+    MemberIdentifier:
+      type: integer
+      format: int64
+      description: ID numérique du membre
+    CreateMember:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/MemberInformation'
+      properties:
+        collectivityIdentifier:
+          type: integer
+          format: int64
+        referees:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberIdentifier'
+        registrationFeePaid:
+          type: boolean
+        membershipDuesPaid:
+          type: boolean
+    MemberInformation:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        gender:
+          $ref: '#/components/schemas/Gender'
+        address:
+          type: string
+        profession:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+        occupation:
+          $ref: '#/components/schemas/MemberOccupation'
+    Member:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/MemberInformation'
+      properties:
+        id:
+          $ref: '#/components/schemas/MemberIdentifier'
+        referees:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+    Gender:
+      type: string
+      enum: [MALE, FEMALE]
+    MemberOccupation:
+      type: string
+      enum: [JUNIOR, SENIOR, SECRETARY, TREASURER, VICE_PRESIDENT, PRESIDENT]
