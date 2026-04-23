@@ -49,4 +49,8 @@ public class Collectivite {
     @OneToMany(mappedBy = "collectivite")
     @JsonIgnoreProperties({"collectivite", "referees"})
     private List<Membre> membres;
+
+    @OneToMany(mappedBy = "collectivite", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"collectivite"})
+    private List<MembershipFee> membershipFees;
 }
