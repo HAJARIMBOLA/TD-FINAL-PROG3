@@ -1,48 +1,48 @@
 package edu.hei.school.agricultural.security;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
 @Component
-public class ApiKeyFilter implements Filter {
+public class ApiKeyFilter extends OncePerRequestFilter {
 
-    // Clé API valide définie en dur dans le code
     private static final String VALID_API_KEY = "agri-secure-key";
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        HttpServletResponse httpResponse = (HttpServletResponse) response;
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        // Récupérer la clé API de l'en-tête x-api-key
-        String apiKey = httpRequest.getHeader("x-api-key");
+        String apiKey = request.getHeader("x-api-key");
 
-        // Vérifier si la clé API est présente
-        if (apiKey == null || apiKey.isEmpty()) {
-            httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            httpResponse.setContentType("application/json");
-            httpResponse.getWriter().write("{\"error\": \"Bad credentials\"}");
+        if (apiKey == null || !apiKey.equals(VALID_API_KEY)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Bad credentials\"}");
             return;
         }
 
-        // Vérifier si la clé API est correcte
-        if (!apiKey.equals(VALID_API_KEY)) {
-            httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            httpResponse.setContentType("application/json");
-            httpResponse.getWriter().write("{\"error\": \"Bad credentials\"}");
-            return;
-        }
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        "api-user",
+                        null,
+                        AuthorityUtils.NO_AUTHORITIES
+                );
 
-        // La clé est valide, continuer le traitement de la requête
-        chain.doFilter(request, response);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        filterChain.doFilter(request, response);
     }
 }
